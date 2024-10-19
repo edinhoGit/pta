@@ -44,6 +44,7 @@ def test1(sckt, user, bad):
   cnt += 1
   data, addr = sckt.recvfrom(2048)
   data = data.decode()
+  print(data)
   mess = data.strip("\n").split(" ")
   if len(mess) != 2:
     return -2
@@ -79,6 +80,7 @@ def test2(sckt):
 def test3(sckt):
   global cnt
   msg = str(cnt)+" LIST"
+  print(msg)
   sckt.send(msg.encode())
   cnt += 1
   data1 = ""
@@ -88,6 +90,7 @@ def test3(sckt):
   while 1:
     data, addr = sckt.recvfrom(2048)
     data = data.decode()
+    print(data)
     if commandUnknow:
         try:
             commandUnknow = False
@@ -181,12 +184,18 @@ def test4(sckt,arq,bad):
     return -2
 
 if __name__ == "__main__":
-  if len(sys.argv) <= 3:
-    print("Usage: pta-client.py <server-ip> <server-port> <user>")
-    sys.exit(2)
-  serverIp = sys.argv[1]
-  serverPort = int(sys.argv[2])
-  user = sys.argv[3]
+  # print (sys.argv)
+  # if len(sys.argv) <= 3:
+  #   print("Usage: pta-client.py <server-ip> <server-port> <user>")
+  #   print("asd")
+  #   sys.exit(2)
+  # serverIp = sys.argv[1]
+  # serverPort = int(sys.argv[2])
+  # user = sys.argv[3]
+
+  serverIp = '127.0.0.1'
+  serverPort = int(11550)
+  user = "user1"
 
   points = 0
 
@@ -194,8 +203,13 @@ if __name__ == "__main__":
   print("Testing command without CUMP")
   cSocket = connection(serverIp,serverPort)
   points += test2(cSocket)
+
+  print(test2(cSocket))
   print("Points: %d/6" % points)
   hardClose(cSocket)
+
+  # sys.exit()
+  
 
   #Testing bad CUMP command
   print("Testing CUMP with bad user")
@@ -203,12 +217,16 @@ if __name__ == "__main__":
   points += test1(cSocket,"laser1212",1)
   print("Points: %d/6" % points)
   hardClose(cSocket)
+  
+  
 
   #Testing good CUMP command
   print("Testing CUMP with good user")
   cSocket = connection(serverIp,serverPort)
   points += test1(cSocket,user,0)
   print("Points: %d/6" % points)
+
+  
 
   #Testing LIST
   print("Testing LIST")
@@ -219,6 +237,8 @@ if __name__ == "__main__":
     arq = random.choice(arqs)
   else:
     arq = "teste"
+
+  
 
   #Testing ARQ
   print("Testing ARQ with good file")

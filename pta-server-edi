@@ -1,0 +1,114 @@
+import socket
+import os
+
+# Função que valida o usuário com base no arquivo "users.txt"
+def validate_user(user):
+    path = os.path.join(os.getcwd(), "pta-server", "users.txt")
+
+    try:
+        with open(path) as file:
+            valid_users = [line.strip() for line in file.readlines()]
+
+        if user in valid_users:
+            return "OK"
+        else:
+            return "NOK"
+    except FileNotFoundError:
+        print("Arquivo de usuários não encontrado!")
+        return "NOK"
+
+# Função que lista os arquivos no diretório "pta-server/files"
+def list_files():
+    files_path = os.path.join(os.getcwd(), "pta-server", "files")
+    try:
+        files = os.listdir(files_path)
+        return files
+    except FileNotFoundError:
+        print("Diretório de arquivos não encontrado!")
+        return []
+
+# Função que pega o conteúdo de um arquivo do diretório "pta-server/files"
+def get_file_content(filename):
+    file_path = os.path.join(os.getcwd(), "pta-server", "files", filename)
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as file:
+            content = file.read()
+        return content
+    else:
+        return None
+
+# Função para processar os comandos recebidos
+def process_command(data, conn, cnt):
+    parts = data.split(" ")
+    command = parts[1].strip()
+
+    if command == "CUMP":
+        user = parts[2].strip()
+        result = validate_user(user)
+        response = f"{cnt} {result}\n"
+        conn.send(response.encode())
+
+    elif command == "LIST":
+        files = list_files()
+        if files:
+            files_list = ",".join(files)
+            response = f"{cnt} ARQS {len(files)} {files_list}\n"
+        else:
+            response = f"{cnt} NOK\n"
+        conn.send(response.encode())
+
+    elif command == "PEGA":
+        filename = parts[2].strip()
+        content = get_file_content(filename)
+        if content:
+            response = f"{cnt} ARQ {len(content)} {content}\n"
+        else:
+            response = f"{cnt} NOK\n"
+        conn.send(response.encode())
+
+    elif command == "TERM":
+        response = f"{cnt} OK\n"
+        conn.send(response.encode())
+        return True  # Indica que o servidor deve encerrar a conexão
+
+    else:
+        # Comando desconhecido
+        response = f"{cnt} NOK\n"
+        conn.send(response.encode())
+
+    return False  # Conexão permanece aberta
+
+# Função principal do servidor
+def server_program():
+    # Define o IP e a porta
+    server_ip = '127.0.0.1'
+    server_port = 11550
+
+    # Cria o socket do servidor
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind((server_ip, server_port))
+    server_socket.listen(1)
+
+    print(f"Servidor TCP rodando em {server_ip}:{server_port}")
+
+    while True:
+        conn, addr = server_socket.accept()  # Aceita a conexão
+        print(f"Conexão recebida de {addr}")
+
+        cnt = 0
+        while True:
+            data = conn.recv(1024).decode()  # Recebe os dados do cliente
+            if not data:
+                break  # Sai se não houver mais dados
+
+            print(f"Recebido: {data.strip()}")
+            cnt += 1
+
+            # Processa o comando recebido
+            if process_command(data, conn, cnt):
+                break  # Encerra a conexão após comando TERM
+
+        conn.close()  # Fecha a conexão
+
+if __name__ == '__main__':
+    server_program()
